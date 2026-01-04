@@ -253,6 +253,33 @@
             font-size: 16px; outline: none; transition: 0.2s;
         }
         .input-field:focus { border-color: var(--n4-primary); }
+/* 1. 確保頁面容器佔滿螢幕高度，並使用 Flex 垂直排列 */
+#page-learned {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* 或是 100% */
+    overflow: hidden; /* 防止整個頁面滾動 */
+}
+
+/* Header 和 Tab Bar 保持原狀，它們會自動依高度排列 */
+
+/* 2. 讓列表區塊 "吃掉" 剩餘的所有空間，並設定自己滾動 */
+#learned-list {
+    flex: 1; /* 關鍵：自動填滿中間剩餘高度 */
+    overflow-y: auto; /* 內容多時，只有這裡會滾動 */
+    
+    /* 選擇性：增加一點底部內距，避免滑到底時被視線擋住 */
+    padding-bottom: 20px; 
+}
+
+/* 3. 底部按鈕區塊不需要特殊定位，它會自然被擠到最下面但不會跑出螢幕 */
+.footer-action {
+    /* 這裡原本的樣式保留即可 */
+    background: white;
+    border-top: 1px solid #eee;
+    padding: 20px;
+    z-index: 10; /* 確保在最上層 */
+}
 
     </style>
 </head>
@@ -263,9 +290,9 @@
     <!-- PAGE 1: HOME -->
     <div id="page-home" class="page active">
         <header style="background:transparent; box-shadow:none; justify-content:center;">
-            <div class="header-title" style="font-size:24px; color:var(--text-main);">日文單字</div>
+            <div class="header-title" style="font-size:30px; color:var(--text-main); padding-top:40px;">日文單字</div>
         </header>
-        <div class="content-scroll" style="padding-top:10px;">
+        <div class="content-scroll" style="padding-top:30px;">
             <div class="home-grid">
                 <!-- N5 -->
                 <div class="level-card card-n5" onclick="App.goToMap('N5')">
@@ -377,8 +404,8 @@
             <div class="tab-btn" onclick="List.filter('Custom', this)">自製</div>
         </div>
         <div class="content-scroll" id="learned-list"></div>
-        <div style="padding:20px; background:white; border-top:1px solid #eee;">
-            <button class="btn-full" onclick="List.startPopQuiz()">⚡ 隨機抽考 30 題</button>
+        <div class="footer-action" style="padding:20px; background:white; border-top:1px solid #eee;">
+            <button class="btn-full" onclick="List.startPopQuiz()"> 隨機抽考 30 題</button>
         </div>
     </div>
 
@@ -389,8 +416,8 @@
             <div class="header-title">最愛單字</div>
         </header>
         <div class="content-scroll" id="fav-list"></div>
-        <div style="padding:20px; background:white; border-top:1px solid #eee;">
-            <button class="btn-full" onclick="List.startPopQuiz(true)">⚡ 隨機抽考最愛</button>
+        <div class="footer-action" style="padding:20px; background:white; border-top:1px solid #eee;">
+            <button class="btn-full" onclick="List.startPopQuiz(true)"> 隨機抽考 30 題</button>
         </div>
     </div>
 
