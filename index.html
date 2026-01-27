@@ -239,6 +239,7 @@
         .btn-half { flex: 1; padding: 14px; border-radius: 12px; font-weight: bold; cursor: pointer; border: none; }
         .btn-cancel { background: #f0f0f0; color: #555; }
         .btn-confirm { background: var(--danger); color: white; }
+        .btn-danger-outline { border: 2px solid var(--danger); background: white; color: var(--danger); }
 
         .settings-static-wrapper {
             margin-top: 15px;
@@ -272,12 +273,41 @@
             font-size: 13px; color: var(--text-main); margin-top: 8px; font-weight: bold; text-align: center;
         }
         
-        /* Selected State */
         .voice-item.active .voice-avatar { 
             border-color: var(--n4-primary); background: white; 
             color: var(--n4-primary); box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
         }
         .voice-item.active .voice-name { color: var(--n4-primary); }
+
+        /* --- NEW: Storage Management Styles --- */
+        .storage-section {
+            background: white; border-radius: 20px; padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 30px;
+        }
+        .storage-box {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 15px; border: 2px solid #eee; border-radius: 12px;
+            font-weight: bold; color: var(--text-main);
+        }
+        .storage-box.cloud { background: #E3F2FD; border-color: #BBDEFB; color: #1565C0; }
+        .storage-box.local { background: #F5F5F5; border-color: #E0E0E0; color: #616161; }
+        
+        .storage-actions {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 10px;
+        }
+        .btn-sync {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 80px; height: 80px; border-radius: 16px; background: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08); cursor: pointer;
+            transition: transform 0.1s, background 0.2s; border: 2px solid transparent;
+        }
+        .btn-sync:active { transform: scale(0.95); }
+        .btn-sync.upload { color: #4CAF50; }
+        .btn-sync.download { color: #2196F3; }
+        
+        .sync-icon { font-size: 28px; margin-bottom: 5px; }
+        .sync-label { font-size: 12px; font-weight: bold; }
 
     </style>
 </head>
@@ -304,17 +334,15 @@
                 <div class="level-card card-n3" onclick="App.goToMap('N3')">
                     <div class="card-title">JLPT N3</div>
                 </div>
-                <!-- N2 (Unlocked) -->
+                <!-- N2 -->
                 <div class="level-card card-n2" onclick="App.goToMap('N2')">
                     <div class="card-title">JLPT N2</div>
                 </div>
-                <!-- N1 (Unlocked) -->
+                <!-- N1 -->
                 <div class="level-card card-n1" onclick="App.goToMap('N1')">
                     <div class="card-title">JLPT N1</div>
                 </div>
             </div>
-
-            <!-- Removed Custom Flashcards Button -->
 
             <div class="extra-grid">
                 <div class="btn-extra" onclick="App.goToLearned()">
@@ -367,7 +395,6 @@
             <div id="view-quiz" style="display:none; padding-top:20px;">
                 <div class="game-card" style="min-height:200px; margin-bottom:20px;">
                      <div class="game-heart heart-icon" id="quiz-heart" onclick="Game.toggleHeart()">♥</div>
-                     <!-- Content updated by JS (Text or Audio Icon) -->
                      <div id="quiz-q-content" style="font-size:32px; font-weight:bold; color:var(--text-main);"></div>
                      <div id="quiz-q-sub" style="font-size:16px; color:var(--text-sub); margin-top:8px;"></div>
                 </div>
@@ -379,7 +406,6 @@
                 <div class="game-card" style="min-height:180px;">
                     <div class="game-heart heart-icon" id="puz-heart" onclick="Game.toggleHeart()">♥</div>
                     <div class="meaning-text" id="puz-mean" style="font-size:26px;"></div>
-                    <!-- 移除 puz-kanji 顯示 -->
                     <div style="font-size:15px; color:#aaa; margin-top:8px;" id="puz-kanji"></div>
                 </div>
                 <div class="slot-box" id="puz-slots"></div>
@@ -440,7 +466,7 @@
             </div>
 
             <!-- Voice Character Selector -->
-            <div style="margin-top:35px; margin-bottom:40px;">
+            <div style="margin-top:35px; margin-bottom:20px;">
                 <label>語音選擇區</label>
                 <div class="voice-grid">
                     <div class="voice-item" onclick="Settings.setRole('role_a')">
@@ -458,8 +484,36 @@
                 </div>
             </div>
 
-            <div style="margin-top:60px;">
-                <button class="btn-full" style="background:var(--danger);" onclick="Settings.askClear()">清除所有資料</button>
+            <!-- Storage Management -->
+            <div style="margin-top:35px;">
+                <label style="margin-bottom:15px;">雲端存檔管理</label>
+                <div class="storage-section">
+                    <div class="storage-box cloud">
+                        <span>☁️ 雲端資料</span>
+                        <span id="cloud-status" style="font-size:12px; font-weight:normal; opacity:0.7;">(需登入)</span>
+                    </div>
+                    
+                    <div class="storage-actions">
+                        <div class="btn-sync download" onclick="Settings.downloadData()">
+                            <span class="sync-icon">⬇️</span>
+                            <span class="sync-label">下載覆蓋</span>
+                        </div>
+                        <div style="color:#ddd; font-size:20px;">⇅</div>
+                        <div class="btn-sync upload" onclick="Settings.uploadData()">
+                            <span class="sync-icon">⬆️</span>
+                            <span class="sync-label">上傳備份</span>
+                        </div>
+                    </div>
+
+                    <div class="storage-box local">
+                        <span>📱 本地資料</span>
+                        <span style="font-size:12px; font-weight:normal; opacity:0.7;">目前進度</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:40px; margin-bottom: 40px;">
+                <button class="btn-full" style="background:var(--danger);" onclick="Settings.askClear()">清除資料</button>
             </div>
         </div>
     </div>
@@ -489,17 +543,14 @@
     <!-- MODAL: CONFIRM CLEAR -->
     <div id="modal-confirm" class="modal-overlay modal-center" onclick="if(event.target===this) document.getElementById('modal-confirm').classList.remove('show')">
         <div class="dialog-box">
-            <h2 style="margin:0 0 15px 0; font-size:22px; color:var(--text-main);">⚠️ 危險操作</h2>
-            <p style="color:#666; margin-bottom:25px; line-height:1.6;">
-                確定要清除所有資料嗎？此動作將會：<br>
-                1. 刪除所有學習進度<br>
-                2. 清空最愛單字<br>
-                3. 清除 App 快取與帳號連結<br>
-                <b>(此動作無法復原)</b>
+            <h2 style="margin:0 0 15px 0; font-size:22px; color:var(--text-main);">⚠️ 清除資料選項</h2>
+            <p style="color:#666; margin-bottom:20px; line-height:1.6;">
+                請選擇要清除的資料來源：
             </p>
-            <div class="btn-group">
-                <button class="btn-half btn-cancel" onclick="document.getElementById('modal-confirm').classList.remove('show')">取消</button>
-                <button class="btn-half btn-confirm" onclick="Settings.executeClear()">確認清除</button>
+            <div class="btn-group" style="flex-direction:column; gap:12px;">
+                <button class="btn-half btn-confirm" style="width:100%;" onclick="Settings.executeClearLocal()">清除本地資料 (重置 APP)</button>
+                <button class="btn-half btn-danger-outline" style="width:100%;" onclick="Settings.executeClearCloud()">清除雲端資料 (保留本地)</button>
+                <button class="btn-half btn-cancel" style="width:100%; margin-top:5px;" onclick="document.getElementById('modal-confirm').classList.remove('show')">取消</button>
             </div>
         </div>
     </div>
@@ -510,7 +561,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     // TODO: 填入您的 Firebase Config
     const firebaseConfig = {
@@ -537,34 +588,62 @@
                 alert("登入失敗: " + error.message);
             }
         },
+        // 手動上傳：覆蓋雲端
         saveUserData: async (data) => {
-            localStorage.setItem('jp_pro_v5', JSON.stringify(data));
-            if (!auth.currentUser) return;
+            if (!auth.currentUser) {
+                alert("請先登入 Google 帳號！");
+                return;
+            }
             try {
-                await setDoc(doc(db, "users", auth.currentUser.uid), data, { merge: true });
-            } catch (e) { console.error("備份失敗", e); }
+                await setDoc(doc(db, "users", auth.currentUser.uid), data);
+                alert("✅ 上傳成功！雲端資料已更新。");
+            } catch (e) { 
+                console.error("備份失敗", e);
+                alert("上傳失敗：" + e.message);
+            }
         },
+        // 手動下載：讀取雲端
         loadUserData: async () => {
-            if (!auth.currentUser) return null;
-            const docRef = doc(db, "users", auth.currentUser.uid);
-            const docSnap = await getDoc(docRef);
-            return docSnap.exists() ? docSnap.data() : null;
+            if (!auth.currentUser) {
+                alert("請先登入 Google 帳號！");
+                return null;
+            }
+            try {
+                const docRef = doc(db, "users", auth.currentUser.uid);
+                const docSnap = await getDoc(docRef);
+                return docSnap.exists() ? docSnap.data() : null;
+            } catch (e) {
+                console.error("下載失敗", e);
+                alert("下載失敗：" + e.message);
+                return null;
+            }
+        },
+        // 清除雲端
+        clearCloudData: async () => {
+            if (!auth.currentUser) {
+                alert("請先登入 Google 帳號！");
+                return;
+            }
+            try {
+                await deleteDoc(doc(db, "users", auth.currentUser.uid));
+                alert("🗑️ 雲端資料已清除！");
+            } catch(e) {
+                alert("清除失敗：" + e.message);
+            }
         }
     };
 
     onAuthStateChanged(auth, async (user) => {
         const btn = document.getElementById('btn-login');
+        const status = document.getElementById('cloud-status');
         if (user) {
             FirebaseMgr.user = user;
             if(btn) btn.innerText = `已登入: ${user.displayName}`;
-            const cloudData = await FirebaseMgr.loadUserData();
-            if(cloudData) {
-                window.App.state = cloudData;
-                alert("已載入雲端進度，即將重新整理...");
-                location.reload();
-            }
+            if(status) status.innerText = "已連線";
+            // 改動：登入後不再自動覆蓋本地資料
         } else {
             if(btn) btn.innerText = "Google 帳號登入";
+            if(status) status.innerText = "(未登入)";
         }
     });
 
@@ -574,12 +653,9 @@
     // --- SW Registration Fix ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', async () => {
-            // Check for unsupported protocols
             if (window.location.protocol === 'file:' || window.location.protocol === 'data:' || window.location.href.startsWith('blob:')) {
-                console.warn('Service Worker registration skipped: Unsupported protocol (file/data/blob). This is expected in preview environments.');
                 return;
             }
-
             try {
                 const registration = await navigator.serviceWorker.register('./sw.js');
                 console.log('SW Registered:', registration.scope);
@@ -606,10 +682,10 @@
 
 <!-- APP LOGIC -->
 <script>
-/* 1. DATA (Simplified for example) */
+/* 1. DATA */
 const RAW_DATA = {
-    N5: [
-         {k:"方",h:"ほう",m:"方向、方面"},
+  "N5": [
+     {k:"方",h:"ほう",m:"方向、方面"},
   {k:"(然して)",h:"そうして",m:"然後"},
   {k:"七",h:"しち",m:"七"},
   {k:"教室",h:"きょうしつ",m:"教室"},
@@ -1281,8 +1357,8 @@ const RAW_DATA = {
   {k:"五",h:"ご",m:"五"},
   {k:"後",h:"あと",m:"後面、之後"},
   {k:"行き(ます)",h:"いきます",m:"去"}
-    ],
-    N4: [ {k:"最近",h:"さいきん",m:"最近"},
+  ],
+  "N4": [ {k:"最近",h:"さいきん",m:"最近"},
   {k:"決して",h:"けっして",m:"絕不(接否定)"},
   {k:"痩せ(ます)",h:"やせます",m:"變瘦"},
   {k:"コンサート",h:"こんさーと",m:"音樂會"},
@@ -1828,7 +1904,8 @@ const RAW_DATA = {
   {k:"趣味",h:"しゅみ",m:"興趣"},
   {k:"娘",h:"むすめ",m:"女兒"},
   {k:"交通",h:"こうつう",m:"交通"}
-], N3: [ {k:"拡大",h:"かくだい",m:"擴大"},
+],
+  "N3": [ {k:"拡大",h:"かくだい",m:"擴大"},
   {k:"紅葉",h:"もみじ",m:"楓葉"},
   {k:"統一",h:"とういつ",m:"統一"},
   {k:"叔母/伯母",h:"おば",m:"姑姑、阿姨、伯母"},
@@ -4462,7 +4539,8 @@ const RAW_DATA = {
   {k:"意識",h:"いしき",m:"意識、知覺"},
   {k:"認め(ます)",h:"みとめます",m:"認可、承認"},
   {k:"勝手",h:"かって",m:"任意、隨便、廚房"}
-], N2: [ {k:"飲み込み(ます)",h:"のみこみます",m:"吞下、理解 (複合)"},
+],
+  "N2": [ {k:"飲み込み(ます)",h:"のみこみます",m:"吞下、理解 (複合)"},
   {k:"天地",h:"てんち",m:"天地"},
   {k:"要領",h:"ようりょう",m:"要領、訣竅"},
   {k:"方面",h:"ほうめん",m:"方面"},
@@ -6004,7 +6082,8 @@ const RAW_DATA = {
   {k:"罵り(ます)",h:"ののしります",m:"謾罵"},
   {k:"一切",h:"いっさい",m:"一切 (書)"},
   {k:"占領",h:"せんりょう",m:"佔領 (書)"}
-], N1: [ {k:"高らか",h:"こがらが",m:"宏亮的 (書)"},
+],
+  "N1": [ {k:"高らか",h:"こがらが",m:"宏亮的 (書)"},
   {k:"洗練",h:"せんれん",m:"洗鍊 (書)"},
   {k:"過失",h:"かしつ",m:"過失 (書)"},
   {k:"浮かれ(ます)",h:"うかれます",m:"歡鬧、得意忘形"},
@@ -7834,10 +7913,8 @@ const RAW_DATA = {
   {k:"厭らしい",h:"いやらしい",m:"下流的、令人作嘔的"},
   {k:"提携",h:"ていけい",m:"合作、攜手 (書)"},
   {k:"地べた",h:"じべた",m:"地面"}
-
 ]
 };
-// Removed Locked Levels
 const LOCKED_LEVELS = [];
 
 /* 2. SRS LOGIC */
@@ -7876,9 +7953,9 @@ const App = {
         Settings.renderRoleSelection();
     },
 
+    // 改動：save 只存 localStorage
     save() {
-        if(window.FirebaseMgr) FirebaseMgr.saveUserData(this.state);
-        else localStorage.setItem('jp_pro_v5', JSON.stringify(this.state));
+        localStorage.setItem('jp_pro_v5', JSON.stringify(this.state));
     },
 
     navTo(pageId) {
@@ -8091,8 +8168,8 @@ const Game = {
         let quizItems = [];
         words.forEach(w => {
             quizItems.push({ type: 'quiz', mode: 'jp_cn', w: w }); // 日文 -> 中文
-            quizItems.push({ type: 'quiz', mode: 'cn_jp', w: w }); // 中文 -> 日文
-            quizItems.push({ type: 'quiz', mode: 'audio_jp', w: w }); // 聽音 -> 日文 (New Mode)
+            // 移除：quizItems.push({ type: 'quiz', mode: 'cn_jp', w: w }); // 看中文 -> 選日文
+            quizItems.push({ type: 'quiz', mode: 'audio_jp', w: w }); // 聽音 -> 日文
             quizItems.push({ type: 'puzzle', w: w }); // 拼字
         });
         quizItems.sort(() => Math.random() - 0.5);
@@ -8135,7 +8212,6 @@ const Game = {
             } else {
                 // 文字模式
                 document.getElementById('quiz-q-content').innerText = isJpCn ? (task.w.k || task.w.h) : task.w.m;
-                // 移除中選日模式的提示文字
                 document.getElementById('quiz-q-sub').innerText = ""; 
             }
 
@@ -8143,8 +8219,6 @@ const Game = {
             box.innerHTML = '';
             
             // 設定正確答案與選項池
-            // 若題目是日文(jp_cn)，答案是中文(m)
-            // 若題目是中文(cn_jp)或聽力(audio_jp)，答案是日文(k/h)
             let correctVal = isJpCn ? task.w.m : (task.w.k || task.w.h);
             
             let opts = [correctVal];
@@ -8251,16 +8325,18 @@ const Game = {
     },
 
     finish() {
-        const key = `${App.state.currentMap}_L${this.targetLevel}`;
-        const record = App.state.progress[key] || { streak: 0 };
-        if (this.startStatus === 'new' || this.startStatus === 'due') record.streak += 1;
-        record.lastReview = Date.now();
-        App.state.progress[key] = record;
-        App.save();
-        if(Game.source !== 'random') {
+        // 修復 Bug: 僅當從地圖進入(map)時才增加進度與更新時間
+        if (this.source === 'map') {
+            const key = `${App.state.currentMap}_L${this.targetLevel}`;
+            const record = App.state.progress[key] || { streak: 0 };
+            if (this.startStatus === 'new' || this.startStatus === 'due') record.streak += 1;
+            record.lastReview = Date.now();
+            App.state.progress[key] = record;
+            App.save();
             alert("🎉 關卡完成！");
             App.goToMap(App.state.currentMap);
         } else {
+            // 隨機抽考不記錄進度
             alert("⚡ 測驗結束！");
             App.quitGame();
         }
@@ -8271,13 +8347,6 @@ const Game = {
 const AudioSys = {
     playVoice(text) {
         if (!text || App.state.settings.voice <= 0.05) return;
-        
-        // TODO: 未來實體音檔實作邏輯
-        // const role = App.state.settings.voiceRole;
-        // const audio = new Audio(`/audio/${role}/${text}.m4a`);
-        // audio.play();
-        
-        // 目前暫用 TTS (iOS/Android 內建)
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'ja-JP';
@@ -8327,10 +8396,7 @@ const Settings = {
         App.state.settings.voiceRole = role;
         App.save();
         this.renderRoleSelection();
-        
-        // 觸發快取清除/預載邏輯 (假設功能)
         if(window.clearRoleCache) {
-            // 清除舊角色快取以節省空間 (可選)
             // window.clearRoleCache(oldRole);
         }
     },
@@ -8338,11 +8404,6 @@ const Settings = {
     renderRoleSelection() {
         const current = App.state.settings.voiceRole;
         document.querySelectorAll('.voice-item').forEach(el => el.classList.remove('active'));
-        
-        // Find element by onclick handler is tricky, using manual ID mapping is better, 
-        // but here we just rely on the onclick call setting the class in a real app or rebuilding DOM.
-        // For simplicity, we just toggle styles based on ID match if we had IDs on items.
-        // Let's re-render the active class based on the avatar IDs which are predictable
         ['role_a', 'role_b', 'role_c'].forEach(r => {
             const el = document.getElementById(`avatar-${r}`).parentElement;
             if(r === current) el.classList.add('active');
@@ -8351,20 +8412,45 @@ const Settings = {
 
     askClear() { document.getElementById('modal-confirm').classList.add('show'); },
 
-    async executeClear() {
+    async executeClearLocal() {
         localStorage.removeItem('jp_pro_v5');
-        if (window.FirebaseMgr && FirebaseMgr.user) {
-            const cleanState = { currentMap: 'N5', progress: {}, favorites: {}, settings: { voice: 1, sfx: 1, voiceRole:'role_a' } };
-            await FirebaseMgr.saveUserData(cleanState);
-        }
         if ('caches' in window) {
             try {
                 const keys = await caches.keys();
                 await Promise.all(keys.map(key => caches.delete(key)));
             } catch(e) { console.log("Cache clear err", e); }
         }
-        alert("資料已清除，將重新啟動應用程式。");
+        alert("本地資料已清除，將重新啟動應用程式。");
         location.reload();
+    },
+
+    async executeClearCloud() {
+        if(window.FirebaseMgr) {
+            await FirebaseMgr.clearCloudData();
+        }
+        document.getElementById('modal-confirm').classList.remove('show');
+    },
+
+    uploadData() {
+        if(confirm("確定要將本地進度覆蓋到雲端嗎？")) {
+            if(window.FirebaseMgr) FirebaseMgr.saveUserData(App.state);
+        }
+    },
+
+    async downloadData() {
+        if(confirm("確定要下載雲端進度覆蓋本地嗎？(本地未同步的進度將會遺失)")) {
+            if(window.FirebaseMgr) {
+                const data = await FirebaseMgr.loadUserData();
+                if(data) {
+                    App.state = data;
+                    App.save(); // save to local
+                    alert("✅ 下載成功！正在重新整理...");
+                    location.reload();
+                } else {
+                    alert("雲端尚無資料");
+                }
+            }
+        }
     }
 };
 
