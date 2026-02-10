@@ -405,7 +405,11 @@
             <div id="view-puzzle" style="display:none; padding-top:20px;">
                 <div class="game-card" style="min-height:180px;">
                     <div class="game-heart heart-icon" id="puz-heart" onclick="Game.toggleHeart()">♥</div>
-                    <div class="meaning-text" id="puz-mean" style="font-size:26px;"></div>
+                    <div class="meaning-text" style="display:flex; align-items:center; justify-content:center; gap:12px;">
+                        <span id="puz-mean" style="font-size:26px;"></span>
+                        <!-- New Audio Icon for Puzzle -->
+                        <span id="puz-audio-btn" style="font-size:24px; cursor:pointer; opacity:0.8; border:1px solid #eee; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center;">🔊</span>
+                    </div>
                     <div style="font-size:15px; color:#aaa; margin-top:8px;" id="puz-kanji"></div>
                 </div>
                 <div class="slot-box" id="puz-slots"></div>
@@ -440,6 +444,14 @@
             <div class="header-title">最愛單字</div>
             <div class="btn-header-icon btn-right" onclick="List.startPopQuiz(true)">T</div>
         </header>
+        <!-- Added Tab Bar for Favorites -->
+        <div class="tab-bar">
+            <div class="tab-btn active" onclick="List.filterFav('N5', this)">N5</div>
+            <div class="tab-btn" onclick="List.filterFav('N4', this)">N4</div>
+            <div class="tab-btn" onclick="List.filterFav('N3', this)">N3</div>
+            <div class="tab-btn" onclick="List.filterFav('N2', this)">N2</div>
+            <div class="tab-btn" onclick="List.filterFav('N1', this)">N1</div>
+        </div>
         <div class="content-scroll" id="fav-list"></div>
     </div>
 
@@ -564,7 +576,7 @@
     import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     // TODO: 填入您的 Firebase Config
-    const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyDf02Afy_G7vMpHiFiMTa4p6-8icdtEXts",
   authDomain: "japanese-vocab-app-f0c17.firebaseapp.com",
   projectId: "japanese-vocab-app-f0c17",
@@ -572,7 +584,6 @@
   messagingSenderId: "177492188811",
   appId: "1:177492188811:web:b4fb36ae2a1ceab0747e8e"
 };
-
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -588,7 +599,6 @@
                 alert("登入失敗: " + error.message);
             }
         },
-        // 手動上傳：覆蓋雲端
         saveUserData: async (data) => {
             if (!auth.currentUser) {
                 alert("請先登入 Google 帳號！");
@@ -602,7 +612,6 @@
                 alert("上傳失敗：" + e.message);
             }
         },
-        // 手動下載：讀取雲端
         loadUserData: async () => {
             if (!auth.currentUser) {
                 alert("請先登入 Google 帳號！");
@@ -618,7 +627,6 @@
                 return null;
             }
         },
-        // 清除雲端
         clearCloudData: async () => {
             if (!auth.currentUser) {
                 alert("請先登入 Google 帳號！");
@@ -640,7 +648,6 @@
             FirebaseMgr.user = user;
             if(btn) btn.innerText = `已登入: ${user.displayName}`;
             if(status) status.innerText = "已連線";
-            // 改動：登入後不再自動覆蓋本地資料
         } else {
             if(btn) btn.innerText = "Google 帳號登入";
             if(status) status.innerText = "(未登入)";
@@ -650,7 +657,6 @@
     const loginBtn = document.getElementById('btn-login');
     if(loginBtn) loginBtn.addEventListener('click', FirebaseMgr.login);
 
-    // --- SW Registration Fix ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', async () => {
             if (window.location.protocol === 'file:' || window.location.protocol === 'data:' || window.location.href.startsWith('blob:')) {
@@ -665,14 +671,12 @@
         });
     }
 
-    // 當用戶切換角色時呼叫 (預載入音檔)
     window.preloadRoleAudio = (roleName, fileList) => {
         if (!navigator.serviceWorker.controller) return;
         const filesToCache = fileList.slice(0, 20).map(f => `/audio/${roleName}/${f}.m4a`);
         filesToCache.forEach(url => fetch(url, { priority: 'low' }).catch(() => {}));
     };
 
-    // 清除舊角色快取
     window.clearRoleCache = (roleName) => {
         if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.controller.postMessage({ type: 'DELETE_ROLE_CACHE', role: roleName });
@@ -7944,7 +7948,6 @@ const App = {
         const saved = localStorage.getItem('jp_pro_v5');
         if(saved) this.state = JSON.parse(saved);
         
-        // Ensure voiceRole exists
         if(!this.state.settings.voiceRole) this.state.settings.voiceRole = 'role_a';
 
         document.getElementById('vol-voice').value = this.state.settings.voice;
@@ -7953,7 +7956,6 @@ const App = {
         Settings.renderRoleSelection();
     },
 
-    // 改動：save 只存 localStorage
     save() {
         localStorage.setItem('jp_pro_v5', JSON.stringify(this.state));
     },
@@ -8006,7 +8008,6 @@ const App = {
         Game.startStatus = status;
         document.getElementById('modal-title').innerText = `JLPT ${this.state.currentMap} - L${level}`;
         
-        // Remove 'new' text
         let msg = status === 'new' ? "" : 
                   status === 'due' ? "複習時間到了！(通關增加進度)" : 
                   status === 'fresh' ? "記憶猶新 (通關不增加進度)" : "已精通大師";
@@ -8024,21 +8025,23 @@ const App = {
 
     goToLearned() {
         this.navTo('page-learned');
-        List.filter('N5', document.querySelector('.tab-btn')); 
+        List.filter('N5', document.querySelector('#page-learned .tab-btn')); 
     },
 
     goToFavorites() {
         this.navTo('page-favorites');
-        List.renderFavorites();
+        List.filterFav('N5', document.querySelector('#page-favorites .tab-btn'));
     }
 };
 
 /* 4. LIST & FAVORITES */
 const List = {
     currentFilter: 'N5',
+    currentFavFilter: 'N5',
+
     filter(diff, btn) {
         this.currentFilter = diff;
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#page-learned .tab-btn').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
         
         const container = document.getElementById('learned-list');
@@ -8066,18 +8069,40 @@ const List = {
         displayWords.forEach(w => container.appendChild(this.createItem(diff, w)));
     },
 
+    filterFav(diff, btn) {
+        this.currentFavFilter = diff;
+        document.querySelectorAll('#page-favorites .tab-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        this.renderFavorites();
+    },
+
     renderFavorites() {
         const container = document.getElementById('fav-list');
         container.innerHTML = '';
+        
         if (App.state.favorites.length === 0) {
             container.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa;">暫無最愛單字</div>';
             return;
         }
+
+        // Filter favorites by currentFavFilter
+        const diff = this.currentFavFilter;
+        let hasFavInLevel = false;
+
         App.state.favorites.forEach(favKey => {
-            const [diff, h] = favKey.split('_'); 
-            let wordObj = RAW_DATA[diff] ? RAW_DATA[diff].find(w => w.h === h) : null;
-            if(wordObj) container.appendChild(this.createItem(diff, wordObj));
+            const [d, h] = favKey.split('_'); 
+            if (d === diff) {
+                let wordObj = RAW_DATA[diff] ? RAW_DATA[diff].find(w => w.h === h) : null;
+                if(wordObj) {
+                    container.appendChild(this.createItem(diff, wordObj));
+                    hasFavInLevel = true;
+                }
+            }
         });
+
+        if (!hasFavInLevel) {
+            container.innerHTML = `<div style="text-align:center; padding:40px; color:#aaa;">${diff} 尚無最愛單字</div>`;
+        }
     },
 
     createItem(diff, w) {
@@ -8106,27 +8131,30 @@ const List = {
              if (App.state.favorites.includes(key)) icon.classList.add('active');
              else icon.classList.remove('active');
         });
-        // Remove from list if in favorites page
-        if(idx !== -1 && document.getElementById('page-favorites').classList.contains('active')) {
+        
+        if(document.getElementById('page-favorites').classList.contains('active')) {
             List.renderFavorites(); 
         }
     },
 
-    startPopQuiz(onlyFav = false) {
+    startPopQuiz(isFavPage) {
         let pool = [];
-        if (onlyFav) {
+        let targetDiff = isFavPage ? this.currentFavFilter : this.currentFilter;
+
+        if (isFavPage) {
              App.state.favorites.forEach(favKey => {
                 const [diff, h] = favKey.split('_');
-                let w = RAW_DATA[diff] ? RAW_DATA[diff].find(x => x.h === h) : null;
-                if(w) pool.push(w);
+                if (diff === targetDiff) {
+                    let w = RAW_DATA[diff] ? RAW_DATA[diff].find(x => x.h === h) : null;
+                    if(w) pool.push(w);
+                }
              });
         } else {
-             const diff = this.currentFilter;
-             const allWords = RAW_DATA[diff];
+             const allWords = RAW_DATA[targetDiff];
              if(allWords) {
                  const maxLevel = Math.ceil(allWords.length / 10);
                  for(let i=1; i<=maxLevel; i++) {
-                     const key = `${diff}_L${i}`;
+                     const key = `${targetDiff}_L${i}`;
                      if(App.state.progress[key] && App.state.progress[key].streak > 0) {
                          pool = pool.concat(allWords.slice((i-1)*10, i*10));
                      }
@@ -8134,7 +8162,7 @@ const List = {
              }
         }
         if(pool.length < 5) {
-            alert("單字量不足 (至少 5 個)");
+            alert(`單字量不足 (至少 5 個)。請確認目前 ${targetDiff} 分類下有足夠單字。`);
             return;
         }
         pool.sort(() => Math.random() - 0.5);
@@ -8167,10 +8195,9 @@ const Game = {
         if (showPreview) words.forEach(w => q.push({ type: 'preview', w: w }));
         let quizItems = [];
         words.forEach(w => {
-            quizItems.push({ type: 'quiz', mode: 'jp_cn', w: w }); // 日文 -> 中文
-            // 移除：quizItems.push({ type: 'quiz', mode: 'cn_jp', w: w }); // 看中文 -> 選日文
-            quizItems.push({ type: 'quiz', mode: 'audio_jp', w: w }); // 聽音 -> 日文
-            quizItems.push({ type: 'puzzle', w: w }); // 拼字
+            quizItems.push({ type: 'quiz', mode: 'jp_cn', w: w }); 
+            quizItems.push({ type: 'quiz', mode: 'audio_jp', w: w }); 
+            quizItems.push({ type: 'puzzle', w: w }); 
         });
         quizItems.sort(() => Math.random() - 0.5);
         this.queue = [...q, ...quizItems];
@@ -8188,7 +8215,10 @@ const Game = {
         ['view-preview', 'view-quiz', 'view-puzzle'].forEach(id => document.getElementById(id).style.display = 'none');
         this.currentDiff = App.state.currentMap; 
 
-        setTimeout(() => AudioSys.playVoice(task.w.h), 400);
+        // 自動播放聲音邏輯：如果是 puzzle 就不播，其他都播
+        if (task.type !== 'puzzle') {
+            setTimeout(() => AudioSys.playVoice(task.w.h), 400);
+        }
 
         if (task.type === 'preview') {
             document.getElementById('view-preview').style.display = 'block';
@@ -8204,13 +8234,10 @@ const Game = {
             const isJpCn = task.mode === 'jp_cn';
             const isAudio = task.mode === 'audio_jp';
 
-            // 設定題目內容
             if (isAudio) {
-                // 聽音辨義模式：顯示大喇叭
                 document.getElementById('quiz-q-content').innerHTML = '<span style="font-size:60px; cursor:pointer;" onclick="AudioSys.playVoice(\'' + task.w.h + '\')">🔊</span>';
                 document.getElementById('quiz-q-sub').innerText = ""; 
             } else {
-                // 文字模式
                 document.getElementById('quiz-q-content').innerText = isJpCn ? (task.w.k || task.w.h) : task.w.m;
                 document.getElementById('quiz-q-sub').innerText = ""; 
             }
@@ -8218,7 +8245,6 @@ const Game = {
             const box = document.getElementById('quiz-options');
             box.innerHTML = '';
             
-            // 設定正確答案與選項池
             let correctVal = isJpCn ? task.w.m : (task.w.k || task.w.h);
             
             let opts = [correctVal];
@@ -8227,7 +8253,6 @@ const Game = {
             while(opts.length < 4) {
                 const r = pool[Math.floor(Math.random() * pool.length)];
                 if(!r) break;
-                // 干擾項類型需與答案一致
                 const val = isJpCn ? r.m : (r.k || r.h);
                 if (!opts.includes(val)) opts.push(val);
             }
@@ -8237,7 +8262,7 @@ const Game = {
                 const btn = document.createElement('div');
                 btn.className = 'option-btn';
                 btn.innerText = o;
-                const checkVal = correctVal; // Closure capture
+                const checkVal = correctVal; 
                 btn.onclick = () => this.checkQuiz(btn, o === checkVal);
                 box.appendChild(btn);
             });
@@ -8246,8 +8271,11 @@ const Game = {
             document.getElementById('view-puzzle').style.display = 'block';
             this.syncHeartUI('puz-heart');
             document.getElementById('puz-mean').innerText = task.w.m;
-            // 拼字關卡：移除日文提示，保持空白
             document.getElementById('puz-kanji').innerText = ""; 
+            
+            // 綁定 puzzle 介面中的喇叭按鈕事件
+            document.getElementById('puz-audio-btn').onclick = () => AudioSys.playVoice(task.w.h);
+
             this.setupPuzzleLogic();
         }
     },
@@ -8325,7 +8353,6 @@ const Game = {
     },
 
     finish() {
-        // 修復 Bug: 僅當從地圖進入(map)時才增加進度與更新時間
         if (this.source === 'map') {
             const key = `${App.state.currentMap}_L${this.targetLevel}`;
             const record = App.state.progress[key] || { streak: 0 };
@@ -8336,7 +8363,6 @@ const Game = {
             alert("🎉 關卡完成！");
             App.goToMap(App.state.currentMap);
         } else {
-            // 隨機抽考不記錄進度
             alert("⚡ 測驗結束！");
             App.quitGame();
         }
